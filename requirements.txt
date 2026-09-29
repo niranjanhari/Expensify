@@ -1,9 +1,11 @@
-# Core Database & Environment (Phase 1)
+# Core Database & Environment
 SQLAlchemy>=2.0.0
 python-dotenv>=1.0.0
 
-# Future Phases (Dashboard, Analytics, AI)
-# streamlit>=1.30.0
-# pandas>=2.0.0
-# plotly>=5.18.0
-# google-genai>=0.1.0
+# Dashboard & Analytics
+streamlit>=1.30.0
+pandas>=2.0.0
+plotly>=5.18.0
+
+# AI
+google-genai>=0.1.0
