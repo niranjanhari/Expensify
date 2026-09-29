@@ -12,6 +12,7 @@ import os
 from decimal import Decimal
 import streamlit as st
 
+from services.balance_service import get_balance_details, update_account_balance
 from services.export_service import (
     create_sqlite_snapshot_bytes,
     export_expenses_to_csv,
@@ -28,13 +29,100 @@ def render_settings_view(currency_symbol: str = "₹") -> None:
     st.markdown('<div class="section-label">System</div>', unsafe_allow_html=True)
     st.markdown('<h1 class="page-title">Settings & Data</h1>', unsafe_allow_html=True)
 
-    tab_backup, tab_prefs, tab_entities = st.tabs([
-        "Backup & Export",
+    tab_balance, tab_prefs, tab_entities, tab_backup = st.tabs([
+        "Current Balance",
         "Preferences & Privacy",
         "Categories & Merchants",
+        "Backup & Export",
     ])
 
-    # ---------------- TAB 1: BACKUP & DATA PORTABILITY ----------------
+    # ---------------- TAB 1: CURRENT BANK BALANCE ----------------
+    with tab_balance:
+        st.markdown('<div class="section-label">Bank Account</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div style="font-weight: 600; font-size: 1.05rem; color: #EDEDE8; margin-bottom: 0.25rem;">'
+            'Manage Current Balance</div>',
+            unsafe_allow_html=True,
+        )
+        st.caption(
+            "Configure your actual bank balance. When you record expenses, your balance will "
+            "automatically update in real-time."
+        )
+
+        bal_info = get_balance_details()
+
+        # Balance overview card
+        if bal_info["is_configured"]:
+            set_at_text = (
+                bal_info["set_at"].strftime("%d %b %Y, %I:%M %p")
+                if bal_info["set_at"]
+                else "Unknown"
+            )
+            note_display = f" • {bal_info['notes']}" if bal_info["notes"] else ""
+            st.markdown(
+                f"""
+                <div class="balance-hero-card" style="margin-top: 0.75rem; margin-bottom: 1.25rem;">
+                    <div class="balance-hero-label">Calculated Live Balance</div>
+                    <div class="balance-hero-amount">{currency_symbol}{bal_info['current_balance']:,.2f}</div>
+                    <div class="balance-hero-subtext">
+                        Saved baseline: <b>{currency_symbol}{bal_info['baseline_amount']:,.2f}</b><br>
+                        Logged expenses since baseline: <b>{currency_symbol}{bal_info['expenses_since_baseline']:,.2f}</b><br>
+                        Baseline established: <b>{set_at_text}</b>{note_display}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                f"""
+                <div class="balance-hero-card" style="margin-top: 0.75rem; margin-bottom: 1.25rem;">
+                    <div class="balance-hero-label">Status</div>
+                    <div class="balance-hero-amount" style="font-size: 1.6rem; color: #9C9B91;">Not Configured</div>
+                    <div class="balance-hero-subtext">
+                        Establish your bank balance baseline below to start tracking live funds.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        # Form to set/update balance
+        st.markdown(
+            '<div style="font-weight: 600; font-size: 0.95rem; color: #EDEDE8; margin-bottom: 0.5rem;">'
+            'Update Balance Baseline</div>',
+            unsafe_allow_html=True,
+        )
+        with st.form("set_balance_form"):
+            init_val = float(bal_info["current_balance"]) if bal_info["is_configured"] else 10000.0
+            new_balance_val = st.number_input(
+                f"Current Bank Account Balance ({currency_symbol}) *",
+                min_value=0.0,
+                max_value=100000000.0,
+                value=init_val,
+                step=100.0,
+                format="%.2f",
+                help="Enter your actual bank account balance right now.",
+            )
+            balance_note = st.text_input(
+                "Account Description / Note (optional)",
+                value=bal_info["notes"] or "",
+                placeholder="e.g. Primary Checking Account, Salary Account",
+            )
+            submit_bal = st.form_submit_button("Save Current Balance", type="primary", use_container_width=True)
+
+        if submit_bal:
+            update_account_balance(
+                Decimal(str(new_balance_val)),
+                notes=balance_note,
+            )
+            st.success(
+                f"Bank balance updated to {currency_symbol}{new_balance_val:,.2f}. "
+                "New baseline established successfully."
+            )
+            st.rerun()
+
+    # ---------------- TAB 2: PREFERENCES & PRIVACY ----------------
     with tab_backup:
         st.markdown('<div class="section-label">Data Portability</div>', unsafe_allow_html=True)
         st.markdown('<div style="font-weight: 600; font-size: 1.05rem; color: #EDEDE8; margin-bottom: 0.5rem;">Export Your Records</div>', unsafe_allow_html=True)

@@ -67,7 +67,7 @@ def render_expense_form(currency_symbol: str = "₹") -> None:
 
 
 def _render_centered_manual_form(currency_symbol: str = "₹") -> None:
-    """Render centered, fast manual expense entry form."""
+    """Render fast, mobile-friendly manual expense entry form."""
     tags = get_all_tags()
     stores = get_all_stores()
 
@@ -77,158 +77,155 @@ def _render_centered_manual_form(currency_symbol: str = "₹") -> None:
     store_names = [s.name for s in stores]
     store_options = store_names + ["+ Add new store..."]
 
-    col_l, col_center, col_r = st.columns([1, 6, 1])
+    # 1. Store selector outside form to allow live category prediction
+    selected_store_name = st.selectbox(
+        "Store / Merchant",
+        options=store_options,
+        index=0 if store_names else len(store_options) - 1,
+        label_visibility="visible",
+    )
 
-    with col_center:
-        # 1. Store selector outside form to allow live category prediction
-        selected_store_name = st.selectbox(
-            "Store / Merchant",
-            options=store_options,
-            index=0 if store_names else len(store_options) - 1,
-            label_visibility="visible",
+    new_store_input = ""
+    default_tag_index = 0
+
+    if selected_store_name == "+ Add new store...":
+        new_store_input = st.text_input(
+            "New store name",
+            placeholder="e.g. Starbucks, College Canteen, Amazon",
+        )
+    elif selected_store_name:
+        matched_store = next((s for s in stores if s.name == selected_store_name), None)
+        if matched_store:
+            metrics = get_store_metrics(matched_store.id)
+            if metrics["purchase_count"] > 0:
+                freq_tag = metrics.get("frequent_tag_name")
+                tag_suffix = f"• Usually {freq_tag}" if freq_tag else ""
+                st.caption(
+                    f"History: {metrics['purchase_count']} visits • Average {currency_symbol}{metrics['avg_spent']:,.2f} {tag_suffix}"
+                )
+                if metrics["frequent_tag_name"] in tag_names:
+                    default_tag_index = tag_names.index(metrics["frequent_tag_name"])
+            elif matched_store.default_tag and matched_store.default_tag.name in tag_names:
+                default_tag_index = tag_names.index(matched_store.default_tag.name)
+            else:
+                pred = predict_tag_for_expense(store_name=matched_store.name)
+                if pred["confidence"] >= 0.8 and pred["tag_name"] in tag_names:
+                    default_tag_index = tag_names.index(pred["tag_name"])
+
+    # 2. Main Entry Form
+    with st.form("add_expense_form", clear_on_submit=True):
+        amount = st.number_input(
+            f"Amount ({currency_symbol}) *",
+            min_value=0.01,
+            max_value=10000000.0,
+            value=None,
+            step=10.0,
+            format="%.2f",
+            placeholder="0.00",
         )
 
-        new_store_input = ""
-        default_tag_index = 0
+        selected_tag = st.selectbox(
+            "Category",
+            options=tag_options,
+            index=default_tag_index if tag_names else len(tag_options) - 1,
+        )
 
+        new_tag_input = ""
+        if selected_tag == "+ Add new category...":
+            new_tag_input = st.text_input(
+                "New category name",
+                placeholder="e.g. Subscriptions, Groceries, Gym",
+            )
+
+        description = st.text_input(
+            "Description (optional)",
+            placeholder="e.g. Lunch thali, Cold coffee, Metro ticket",
+        )
+
+        row2_c1, row2_c2 = st.columns(2)
+        with row2_c1:
+            expense_date = st.date_input("Date", value=date.today())
+            expense_time = st.time_input("Time", value=datetime.now().time())
+        with row2_c2:
+            payment_method = st.selectbox("Payment method", options=PAYMENT_METHODS, index=0)
+
+        submit_btn = st.form_submit_button("Save expense", type="primary", use_container_width=True)
+
+    if submit_btn:
+        if amount is None or amount <= 0:
+            st.error("Please enter a valid amount.")
+            return
+
+        # Resolve Store
+        store_id = None
+        store_display = ""
         if selected_store_name == "+ Add new store...":
-            new_store_input = st.text_input(
-                "New store name",
-                placeholder="e.g. Starbucks, College Canteen, Amazon",
-            )
-        elif selected_store_name:
-            matched_store = next((s for s in stores if s.name == selected_store_name), None)
-            if matched_store:
-                metrics = get_store_metrics(matched_store.id)
-                if metrics["purchase_count"] > 0:
-                    freq_tag = metrics.get("frequent_tag_name")
-                    tag_suffix = f"• Usually {freq_tag}" if freq_tag else ""
-                    st.caption(
-                        f"History: {metrics['purchase_count']} visits • Average {currency_symbol}{metrics['avg_spent']:,.2f} {tag_suffix}"
-                    )
-                    if metrics["frequent_tag_name"] in tag_names:
-                        default_tag_index = tag_names.index(metrics["frequent_tag_name"])
-                elif matched_store.default_tag and matched_store.default_tag.name in tag_names:
-                    default_tag_index = tag_names.index(matched_store.default_tag.name)
-                else:
-                    pred = predict_tag_for_expense(store_name=matched_store.name)
-                    if pred["confidence"] >= 0.8 and pred["tag_name"] in tag_names:
-                        default_tag_index = tag_names.index(pred["tag_name"])
-
-        # 2. Main Entry Form
-        with st.form("add_expense_form", clear_on_submit=True):
-            amount = st.number_input(
-                f"Amount ({currency_symbol}) *",
-                min_value=0.01,
-                max_value=10000000.0,
-                value=None,
-                step=10.0,
-                format="%.2f",
-                placeholder="0.00",
-            )
-
-            selected_tag = st.selectbox(
-                "Category",
-                options=tag_options,
-                index=default_tag_index if tag_names else len(tag_options) - 1,
-            )
-
-            new_tag_input = ""
-            if selected_tag == "+ Add new category...":
-                new_tag_input = st.text_input(
-                    "New category name",
-                    placeholder="e.g. Subscriptions, Groceries, Gym",
-                )
-
-            description = st.text_input(
-                "Description (optional)",
-                placeholder="e.g. Lunch thali, Cold coffee, Metro ticket",
-            )
-
-            row2_c1, row2_c2 = st.columns(2)
-            with row2_c1:
-                expense_date = st.date_input("Date", value=date.today())
-                expense_time = st.time_input("Time", value=datetime.now().time())
-            with row2_c2:
-                payment_method = st.selectbox("Payment method", options=PAYMENT_METHODS, index=0)
-
-            submit_btn = st.form_submit_button("Save expense", type="primary", use_container_width=True)
-
-        if submit_btn:
-            if amount is None or amount <= 0:
-                st.error("Please enter a valid amount.")
+            if not new_store_input.strip():
+                st.error("Please enter a store name.")
                 return
-
-            # Resolve Store
-            store_id = None
-            store_display = ""
-            if selected_store_name == "+ Add new store...":
-                if not new_store_input.strip():
-                    st.error("Please enter a store name.")
-                    return
-                store = get_or_create_store(new_store_input.strip())
+            store = get_or_create_store(new_store_input.strip())
+            store_id = store.id
+            store_display = store.name
+        elif selected_store_name:
+            store = next((s for s in stores if s.name == selected_store_name), None)
+            if store:
                 store_id = store.id
                 store_display = store.name
-            elif selected_store_name:
-                store = next((s for s in stores if s.name == selected_store_name), None)
-                if store:
-                    store_id = store.id
-                    store_display = store.name
 
-            # Resolve Tag
-            tag_id = None
-            tag_display = ""
-            if selected_tag == "+ Add new category...":
-                if not new_tag_input.strip():
-                    st.error("Please enter a category name.")
-                    return
-                tag = get_or_create_tag(new_tag_input.strip())
+        # Resolve Tag
+        tag_id = None
+        tag_display = ""
+        if selected_tag == "+ Add new category...":
+            if not new_tag_input.strip():
+                st.error("Please enter a category name.")
+                return
+            tag = get_or_create_tag(new_tag_input.strip())
+            tag_id = tag.id
+            tag_display = tag.name
+        elif selected_tag:
+            tag = next((t for t in tags if t.name == selected_tag), None)
+            if tag:
                 tag_id = tag.id
                 tag_display = tag.name
-            elif selected_tag:
-                tag = next((t for t in tags if t.name == selected_tag), None)
-                if tag:
-                    tag_id = tag.id
-                    tag_display = tag.name
 
-            try:
-                create_expense(
-                    amount=amount,
-                    date=expense_date,
-                    time=expense_time,
-                    description=description,
-                    store_id=store_id,
-                    tag_id=tag_id,
-                    payment_method=payment_method,
-                )
+        try:
+            create_expense(
+                amount=amount,
+                date=expense_date,
+                time=expense_time,
+                description=description,
+                store_id=store_id,
+                tag_id=tag_id,
+                payment_method=payment_method,
+            )
 
-                # Check statistical anomaly for awareness
-                anomaly = check_single_expense_anomaly(
-                    amount=Decimal(str(amount)),
-                    tag_id=tag_id,
-                    store_id=store_id,
-                )
-                if anomaly:
-                    st.markdown(
-                        f"""
-                        <div class="notice-block-warn">
-                            <b>Unusual amount:</b> {anomaly['message']}
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-
+            # Check statistical anomaly for awareness
+            anomaly = check_single_expense_anomaly(
+                amount=Decimal(str(amount)),
+                tag_id=tag_id,
+                store_id=store_id,
+            )
+            if anomaly:
                 st.markdown(
                     f"""
-                    <div class="notice-block">
-                        Recorded {currency_symbol}{Decimal(str(amount)):,.2f} at {store_display or 'merchant'} [{tag_display or 'Uncategorized'}].
+                    <div class="notice-block-warn">
+                        <b>Unusual amount:</b> {anomaly['message']}
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
-                st.rerun()
-            except Exception as e:
-                st.error(f"Failed to record expense: {e}")
+
+            st.markdown(
+                f"""
+                <div class="notice-block">
+                    Recorded {currency_symbol}{Decimal(str(amount)):,.2f} at {store_display or 'merchant'} [{tag_display or 'Uncategorized'}].
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.rerun()
+        except Exception as e:
+            st.error(f"Failed to record expense: {e}")
 
 
 def _render_sentence_entry_tab(currency_symbol: str = "₹") -> None:

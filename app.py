@@ -25,6 +25,8 @@ from ui.stores import render_stores_view
 from ui.styles import CUSTOM_CSS
 from ui.transactions import render_transactions_view
 
+from utils.navigation import NAV_OPTIONS, PRIMARY_NAV_PAGES, navigate_to
+
 # Load environment configuration
 load_dotenv()
 DEFAULT_CURRENCY = os.getenv("DEFAULT_CURRENCY", "₹")
@@ -33,7 +35,7 @@ DEFAULT_CURRENCY = os.getenv("DEFAULT_CURRENCY", "₹")
 st.set_page_config(
     page_title="Expensify — Personal Spending Journal",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 # Apply Central Design System
@@ -47,23 +49,7 @@ def setup_database():
 
 setup_database()
 
-# Navigation options with Dashboard as default
-NAV_OPTIONS = [
-    "Dashboard",
-    "Add Expense",
-    "Transactions",
-    "Quick Add",
-    "Analytics",
-    "Budgets",
-    "Recurring",
-    "Forecast & Predictions",
-    "Anomalies",
-    "Import / Staging",
-    "Stores & Merchants",
-    "AI Advisor",
-    "Settings",
-]
-
+# Synchronize navigation state
 if "app_nav" not in st.session_state:
     st.session_state.app_nav = "Dashboard"
 
@@ -85,15 +71,20 @@ with st.sidebar:
         options=NAV_OPTIONS,
         index=current_idx,
         label_visibility="collapsed",
-        key="main_nav_radio",
     )
     if selected_nav != st.session_state.app_nav:
         st.session_state.app_nav = selected_nav
+        st.rerun()
 
     st.markdown("<hr>", unsafe_allow_html=True)
     active_currency = st.session_state.get("app_currency", DEFAULT_CURRENCY)
     st.caption("Database: Local SQLite")
     st.caption(f"Currency: {active_currency}")
+
+# On subpages, provide a fast 1-tap mobile shortcut back to Dashboard
+if st.session_state.app_nav != "Dashboard":
+    if st.button("← Back to Dashboard", key="btn_mobile_back_dash"):
+        navigate_to("Dashboard")
 
 # Route to corresponding section
 active_currency = st.session_state.get("app_currency", DEFAULT_CURRENCY)

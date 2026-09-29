@@ -262,3 +262,25 @@ class ImportedTransaction(Base):
 
     def __repr__(self) -> str:
         return f"<ImportedTransaction(id={self.id}, status='{self.status}', amount={self.detected_amount}, merchant='{self.detected_merchant}')>"
+
+
+class AccountBalance(Base):
+    """
+    User-configured bank account balance.
+    Establishes a baseline balance at a specific point in time or transaction baseline.
+    The current active balance is computed as:
+        current_balance = baseline_amount - sum(expenses logged after baseline)
+    This ensures that Streamlit reruns and refreshes are pure read-only calculations
+    and will never double-subtract expenses.
+    """
+    __tablename__ = "account_balances"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    baseline_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    last_expense_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    set_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<AccountBalance(id={self.id}, baseline={self.baseline_amount}, set_at={self.set_at})>"

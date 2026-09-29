@@ -707,23 +707,227 @@ hr {
     margin: 1.5rem 0 !important;
 }
 
-/* Mobile Responsiveness */
+/* Balance Hero Card - Prominent, clean financial anchor */
+.balance-hero-card {
+    background-color: #131613;
+    border: 1px solid #242821;
+    border-radius: 10px;
+    padding: 1.35rem 1.5rem;
+    margin-bottom: 0.85rem;
+    position: relative;
+}
+
+.balance-hero-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #7D7C73;
+    margin-bottom: 0.25rem;
+}
+
+.balance-hero-amount {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #F7F7F2;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    margin: 0.2rem 0 0.4rem 0;
+}
+
+.balance-hero-subtext {
+    font-size: 0.82rem;
+    color: #8C8B82;
+    line-height: 1.4;
+}
+
+.balance-hero-subtext b {
+    color: #C5C4BA;
+}
+
+/* Compact Spending Summary Block */
+.compact-stat-card {
+    background-color: #141713;
+    border: 1px solid #22261F;
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.compact-stat-label {
+    font-size: 0.70rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #7C7B72;
+    margin-bottom: 0.25rem;
+}
+
+.compact-stat-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.45rem;
+    font-weight: 600;
+    color: #EDEDE8;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 0.2rem;
+}
+
+.compact-stat-subtext {
+    font-size: 0.75rem;
+    color: #828178;
+}
+
+/* Quick Actions Button Container */
+.quick-action-primary button {
+    background-color: #315843 !important;
+    color: #FFFFFF !important;
+    border: 1px solid #3E6B56 !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    min-height: 3rem !important;
+    border-radius: 8px !important;
+}
+
+.quick-action-primary button:hover {
+    background-color: #3A694F !important;
+    border-color: #4B7F64 !important;
+}
+
+.quick-action-secondary button {
+    background-color: #151814 !important;
+    color: #D4D3CB !important;
+    border: 1px solid #262923 !important;
+    font-weight: 500 !important;
+    font-size: 0.88rem !important;
+    min-height: 2.75rem !important;
+    border-radius: 7px !important;
+}
+
+.quick-action-secondary button:hover {
+    background-color: #1D211B !important;
+    border-color: #343830 !important;
+    color: #F0EFE9 !important;
+}
+
+/* Mobile Top Navigation Pills */
+div[role="radiogroup"]:has(button[data-variant="pills"]),
+div[aria-label="Navigation Views"][role="radiogroup"] {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    gap: 0.35rem !important;
+    padding: 0.2rem 0.1rem 0.6rem 0.1rem !important;
+    margin-bottom: 0.85rem !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+}
+
+div[role="radiogroup"]:has(button[data-variant="pills"])::-webkit-scrollbar,
+div[aria-label="Navigation Views"][role="radiogroup"]::-webkit-scrollbar {
+    display: none !important;
+}
+
+button[data-variant="pills"] {
+    background-color: #141713 !important;
+    color: #9E9D93 !important;
+    border: 1px solid #232720 !important;
+    border-radius: 6px !important;
+    font-size: 0.82rem !important;
+    font-weight: 500 !important;
+    padding: 0.35rem 0.8rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    min-height: 2.1rem !important;
+    height: auto !important;
+    transition: all 0.15s ease !important;
+}
+
+button[data-variant="pills"]:hover {
+    background-color: #1C201A !important;
+    color: #EDEDE8 !important;
+    border-color: #343A2F !important;
+}
+
+button[data-variant="pills"][data-selected="true"],
+button[data-variant="pills"][aria-checked="true"] {
+    background-color: #1E2D22 !important;
+    color: #E2EFE7 !important;
+    border-color: #3E6B56 !important;
+    font-weight: 600 !important;
+}
+
+/* Mobile-First Responsiveness & Spacing */
 @media (max-width: 768px) {
     .block-container {
-        padding-top: 1rem !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
+        padding-top: 3.25rem !important;
+        padding-bottom: 3.5rem !important;
+        padding-left: 0.85rem !important;
+        padding-right: 0.85rem !important;
     }
+    
     .page-title {
-        font-size: 1.4rem !important;
+        font-size: 1.5rem !important;
+        margin-bottom: 0.2rem !important;
     }
-    .stat-value, .stat-number {
+    
+    .page-subtitle {
+        font-size: 0.84rem !important;
+        margin-bottom: 1.25rem !important;
+    }
+    
+    .balance-hero-amount {
+        font-size: 1.95rem !important;
+    }
+    
+    .balance-hero-card {
+        padding: 1.15rem 1.2rem !important;
+    }
+    
+    .compact-stat-value {
         font-size: 1.3rem !important;
     }
-    .editorial-card {
-        padding: 1rem !important;
+    
+    /* Touch target comfort on mobile */
+    button[data-testid*="stBaseButton"],
+    div[data-testid="stPopover"] > button,
+    div[data-testid="stPopoverButton"] > button {
+        min-height: 2.75rem !important;
+        font-size: 0.92rem !important;
+    }
+    
+    /* Make form inputs finger-friendly */
+    div[data-baseweb="input"] > div,
+    div[data-baseweb="select"] > div {
+        min-height: 2.75rem !important;
+        font-size: 0.95rem !important;
+    }
+    
+    /* Transaction row tap targets */
+    .data-row {
+        padding: 0.85rem 0.4rem !important;
+    }
+    
+    .data-row-store {
+        font-size: 0.92rem !important;
+    }
+    
+    .data-row-amount {
+        font-size: 1rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .block-container {
+        padding-left: 0.65rem !important;
+        padding-right: 0.65rem !important;
+    }
+    
+    .balance-hero-amount {
+        font-size: 1.75rem !important;
     }
 }
 </style>
-
 """
