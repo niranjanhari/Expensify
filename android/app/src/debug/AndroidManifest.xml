@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.expensify.mobile">
+    <!-- The INTERNET permission is required for Flutter development only.
+         The Flutter tool needs it to communicate with the running application
+         to allow hot reload, setting breakpoints, and the Dart VM service.
+    -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+</manifest>

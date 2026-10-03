@@ -1,32 +1,25 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
 
-# Environments
-.venv/
-env/
-venv/
-ENV/
+# Android
+.gradle/
+android/.gradle/
+android/local.properties
+android/key.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
 
-# Configuration and Secrets
-.env
-.env.local
-
-# Database files
-data/*.db
-data/*.sqlite
-data/*.sqlite3
-*.db
-
-# Streamlit
-.streamlit/secrets.toml
-
-# IDEs
-.vscode/
+# IDE
 .idea/
+*.iml
+.vscode/
 
-# Testing & Coverage
-.pytest_cache/
-.coverage
-htmlcov/
+# OS
+.DS_Store
+Thumbs.db
