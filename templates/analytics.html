@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics • Expensify Lite{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Spending Analytics</h1>
+        <div class="page-subtitle">Visual breakdowns and historical spending trends</div>
+    </div>
+</div>
+
+{% if total_count == 0 %}
+<div class="empty-state">
+    <div class="empty-icon-wrap">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+    </div>
+    <h3 class="empty-title">No spending data to visualize</h3>
+    <p class="empty-desc">Your expense tracker has no transactions yet. Add expenses to populate the interactive charts.</p>
+    <a href="{{ url_for('expenses') }}" class="btn btn-primary">Go to Expenses</a>
+</div>
+{% else %}
+<div class="analytics-section">
+    <div class="section-header">
+        <div>
+            <h2 class="section-title">1. Category Spending</h2>
+            <div class="section-subtitle">Interactive breakdown of spending grouped by category</div>
+        </div>
+        <div class="section-controls">
+            <form method="GET" action="{{ url_for('analytics') }}" id="monthSelectForm">
+                <select name="month" id="analyticsMonthSelect" class="form-control form-control-sm" onchange="this.form.submit();">
+                    {% for m in available_months %}
+                    <option value="{{ m.month }}" {% if m.month == selected_month %}selected{% endif %}>{{ m.label }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="content-box">
+            <div class="chart-container donut-container">
+                <canvas id="analyticsDonutChart"></canvas>
+                <div id="analyticsDonutEmptyMessage" class="chart-empty-message" style="display: none;">
+                    No expenses recorded in {{ selected_month_label }}
+                </div>
+            </div>
+        </div>
+
+        <div class="content-box">
+            <div class="metric-card mb-4">
+                <div class="metric-label">Total for {{ selected_month_label }}</div>
+                <div class="metric-value">{{ month_summary.total_paise | inr }}</div>
+                <div class="metric-subtext">{{ month_summary.expense_count }} transaction{% if month_summary.expense_count != 1 %}s{% endif %} recorded</div>
+            </div>
+
+            {% if category_breakdown %}
+            <div class="category-breakdown-list">
+                <div class="breakdown-header">Category Breakdown</div>
+                {% for b in category_breakdown %}
+                {% set pct = ((b.total_paise / month_summary.total_paise) * 100) if month_summary.total_paise > 0 else 0 %}
+                <div class="breakdown-row">
+                    <div class="breakdown-cat">
+                        <span class="color-dot" style="background-color: {{ category_colors.get(b.category, '#8395A7') }};"></span>
+                        <span class="breakdown-name">{{ b.category }}</span>
+                    </div>
+                    <div class="breakdown-values">
+                        <span class="breakdown-amt">{{ b.total_paise | inr }}</span>
+                        <span class="breakdown-pct">({{ pct | round(1) }}%)</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-mini">No category data for {{ selected_month_label }}.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="analytics-section">
+    <div class="section-header">
+        <div>
+            <h2 class="section-title">2. Monthly Spending (Last 6 Months)</h2>
+            <div class="section-subtitle">Historical monthly spending comparison (current month highlighted in lime)</div>
+        </div>
+    </div>
+
+    <div class="content-box">
+        <div class="chart-container bar-container">
+            <canvas id="analyticsBarChart"></canvas>
+            <div id="analyticsBarEmptyMessage" class="chart-empty-message" style="display: none;">
+                No expenses in the last 6 months
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function() {
+        var breakdownData = [
+            {% for b in category_breakdown %}
+            {
+                category: {{ b.category | tojson }},
+                total_rupees: {{ (b.total_paise / 100.0) | round(2) }},
+                color: {{ category_colors.get(b.category, '#8395A7') | tojson }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        var trendData = [
+            {% for item in six_months_trend %}
+            {
+                month: {{ item.month | tojson }},
+                label: {{ item.label | tojson }},
+                total_rupees: {{ (item.total_paise / 100.0) | round(2) }},
+                is_current: {{ (item.month == current_month) | tojson }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        if (window.Expensify) {
+            if (window.Expensify.initAnalyticsDonut) {
+                window.Expensify.initAnalyticsDonut(breakdownData);
+            }
+            if (window.Expensify.initAnalyticsBar) {
+                window.Expensify.initAnalyticsBar(trendData);
+            }
+        }
+    })();
+</script>
+{% endblock %}

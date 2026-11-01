@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Expenses • Expensify Lite{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Expenses</h1>
+        <div class="page-subtitle">Track, search, and manage your student transactions</div>
+    </div>
+    <div class="page-actions">
+        <button type="button" class="btn btn-primary" onclick="window.Expensify.openAddModal();">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Add Expense</span>
+        </button>
+    </div>
+</div>
+
+<div class="content-box filter-card">
+    <form method="GET" action="{{ url_for('expenses') }}" class="filter-form" id="filterForm">
+        <div class="filter-row">
+            <div class="filter-group search-group">
+                <div class="input-with-icon">
+                    <svg class="input-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" name="q" class="form-control" placeholder="Search description..." value="{{ search_query }}">
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <select name="category" class="form-control">
+                    <option value="All" {% if category == 'All' %}selected{% endif %}>All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <select name="sort_by" class="form-control">
+                    <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>Date: Newest First</option>
+                    <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>Date: Oldest First</option>
+                    <option value="amount_desc" {% if sort_by == 'amount_desc' %}selected{% endif %}>Amount: Highest First</option>
+                    <option value="amount_asc" {% if sort_by == 'amount_asc' %}selected{% endif %}>Amount: Lowest First</option>
+                </select>
+            </div>
+
+            <div class="filter-group filter-actions">
+                <button type="submit" class="btn btn-secondary">Filter</button>
+                <a href="{{ url_for('expenses') }}" class="btn btn-ghost">Reset</a>
+            </div>
+        </div>
+
+        <div class="date-filter-toggle">
+            <label class="checkbox-label">
+                <input type="checkbox" id="toggleDateRange" {% if start_date or end_date %}checked{% endif %}>
+                <span>Filter by date range</span>
+            </label>
+        </div>
+
+        <div class="date-filter-row {% if not start_date and not end_date %}is-hidden{% endif %}" id="dateFilterRow">
+            <div class="date-input-group">
+                <label class="form-label-sm">From</label>
+                <input type="date" name="start_date" class="form-control form-control-sm" value="{{ start_date }}">
+            </div>
+            <div class="date-input-group">
+                <label class="form-label-sm">To</label>
+                <input type="date" name="end_date" class="form-control form-control-sm" value="{{ end_date }}">
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="toolbar-info">
+    <div class="text-sm text-secondary">
+        Showing <b>{{ expenses|length }}</b> transaction{% if expenses|length != 1 %}s{% endif %}
+        {% if expenses %}
+        &bull; Total: <b>{{ total_filtered_paise | inr }}</b>
+        {% endif %}
+    </div>
+    <div>
+        <a href="{{ url_for('export_csv', q=search_query, category=category, start_date=start_date, end_date=end_date, sort_by=sort_by) }}" class="btn btn-secondary btn-sm">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Export CSV</span>
+        </a>
+    </div>
+</div>
+
+{% if expenses %}
+<div class="content-box p-0">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Payment</th>
+                    <th class="text-right">Amount</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exp in expenses %}
+                <tr id="expense-row-{{ exp.id }}">
+                    <td class="text-secondary text-sm nowrap">{{ exp.expense_date | display_date }}</td>
+                    <td>
+                        <div class="fw-medium">{{ exp.description }}</div>
+                        <div class="text-xs text-secondary">ID #{{ exp.id }}</div>
+                    </td>
+                    <td>
+                        <span class="category-badge" style="--badge-color: {{ category_colors.get(exp.category, '#8395A7') }};">
+                            {{ exp.category }}
+                        </span>
+                    </td>
+                    <td class="text-secondary text-sm">{{ exp.payment_method }}</td>
+                    <td class="amount-cell">{{ exp.amount_paise | inr }}</td>
+                    <td class="text-right nowrap">
+                        <button type="button" class="btn-icon" title="Edit"
+                            onclick="window.Expensify.openEditModal({{ exp.id }}, {{ (exp.amount_paise / 100.0) | round(2) }}, {{ exp.description | tojson }}, {{ exp.category | tojson }}, {{ exp.expense_date | tojson }}, {{ exp.payment_method | tojson }});">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                        <button type="button" class="btn-icon text-danger" title="Delete"
+                            onclick="window.Expensify.openDeleteModal({{ exp.id }}, {{ exp.description | tojson }}, {{ exp.amount_paise | inr | tojson }});">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon-wrap">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+    </div>
+    <h3 class="empty-title">No transactions match your filters</h3>
+    <p class="empty-desc">Try clearing your search query, selecting "All Categories", or widening your date range.</p>
+    <a href="{{ url_for('expenses') }}" class="btn btn-secondary">Clear Filters</a>
+</div>
+{% endif %}
+
+<div class="modal-backdrop" id="editExpenseModal" aria-hidden="true">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 class="modal-title" id="editModalTitle">Edit Expense</h3>
+            <button type="button" class="modal-close-btn" id="closeEditModalBtn">&times;</button>
+        </div>
+        <form id="editExpenseForm" method="POST" action="" class="modal-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="next" value="{{ request.full_path }}">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="editAmount" class="form-label">Amount (INR ₹) *</label>
+                    <input type="number" id="editAmount" name="amount" class="form-control" step="0.01" min="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCategory" class="form-label">Category *</label>
+                    <select id="editCategory" name="category" class="form-control" required>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label for="editDescription" class="form-label">Description *</label>
+                    <input type="text" id="editDescription" name="description" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="editDate" class="form-label">Expense Date *</label>
+                    <input type="date" id="editDate" name="expense_date" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="editPaymentMethod" class="form-label">Payment Method *</label>
+                    <select id="editPaymentMethod" name="payment_method" class="form-control" required>
+                        {% for pm in payment_methods %}
+                        <option value="{{ pm }}">{{ pm }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelEditModalBtn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal-backdrop" id="deleteExpenseModal" aria-hidden="true">
+    <div class="modal-card modal-card-sm">
+        <div class="modal-header">
+            <h3 class="modal-title">Confirm Deletion</h3>
+            <button type="button" class="modal-close-btn" id="closeDeleteModalBtn">&times;</button>
+        </div>
+        <form id="deleteExpenseForm" method="POST" action="" class="modal-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="next" value="{{ request.full_path }}">
+            <p class="modal-body-text">
+                Are you sure you want to delete <b id="deleteExpenseDesc">this transaction</b> (<span id="deleteExpenseAmount"></span>)? This action cannot be undone.
+            </p>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelDeleteModalBtn">Cancel</button>
+                <button type="submit" class="btn btn-danger">Delete Transaction</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

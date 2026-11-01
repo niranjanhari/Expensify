@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Expensify Lite{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+        (function() {
+            var saved = localStorage.getItem('expensify-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+        })();
+    </script>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="{{ url_for('dashboard') }}" class="brand-link">
+                    <span class="brand-badge">₹</span>
+                    <span class="brand-title">Expensify</span>
+                    <span class="brand-subbadge">Lite</span>
+                </a>
+                <div class="brand-subtitle">Student Expense Tracker</div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard') }}" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="9"></rect>
+                        <rect x="14" y="3" width="7" height="5"></rect>
+                        <rect x="14" y="12" width="7" height="9"></rect>
+                        <rect x="3" y="16" width="7" height="5"></rect>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('expenses') }}" class="nav-item {% if active_page == 'expenses' %}active{% endif %}">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                    <span>Expenses</span>
+                </a>
+                <a href="{{ url_for('analytics') }}" class="nav-item {% if active_page == 'analytics' %}active{% endif %}">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    <span>Analytics</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-action">
+                <button type="button" class="btn btn-primary btn-block" id="openAddModalBtn">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>Add Expense</span>
+                </button>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="theme-control">
+                    <span class="theme-label">Theme</span>
+                    <button type="button" class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle theme">
+                        <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                        <span id="themeToggleText">Light</span>
+                    </button>
+                </div>
+                <div class="storage-info">
+                    <div><b>Storage:</b> Local SQLite</div>
+                    <div><b>Status:</b> Offline Ready</div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="mobile-header">
+                <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <a href="{{ url_for('dashboard') }}" class="brand-link">
+                    <span class="brand-badge">₹</span>
+                    <span class="brand-title">Expensify</span>
+                </a>
+                <button type="button" class="btn btn-primary btn-sm" id="mobileAddBtn">＋ Add</button>
+            </header>
+
+            <main class="content-container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    <span>{{ message }}</span>
+                                    <button type="button" class="alert-close" onclick="this.parentElement.remove();">&times;</button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="addExpenseModal" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">Add New Expense</h3>
+                <button type="button" class="modal-close-btn" id="closeAddModalBtn">&times;</button>
+            </div>
+            <form action="{{ url_for('add_expense') }}" method="POST" class="modal-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="next" value="{{ request.full_path }}">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="addAmount" class="form-label">Amount (INR ₹) *</label>
+                        <input type="number" id="addAmount" name="amount" class="form-control" placeholder="150.00" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addCategory" class="form-label">Category *</label>
+                        <select id="addCategory" name="category" class="form-control" required>
+                            {% for cat in categories %}
+                                <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="addDescription" class="form-label">Description *</label>
+                        <input type="text" id="addDescription" name="description" class="form-control" placeholder="e.g. Canteen lunch, Bus pass, Notebooks" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addDate" class="form-label">Expense Date *</label>
+                        <input type="date" id="addDate" name="expense_date" class="form-control" value="{{ today_str }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addPaymentMethod" class="form-label">Payment Method *</label>
+                        <select id="addPaymentMethod" name="payment_method" class="form-control" required>
+                            {% for pm in payment_methods %}
+                                <option value="{{ pm }}">{{ pm }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelAddModalBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard • Expensify Lite{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Overview</h1>
+        <div class="page-subtitle">Financial activity for {{ current_month_label }}</div>
+    </div>
+    <div class="page-actions">
+        <button type="button" class="btn btn-primary" onclick="window.Expensify.openAddModal();">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Add Expense</span>
+        </button>
+    </div>
+</div>
+
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-label">Total Spent This Month</div>
+        <div class="metric-value">{{ summary.total_paise | inr }}</div>
+        <div class="metric-subtext">{{ current_month_label }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Transactions</div>
+        <div class="metric-value">{{ summary.expense_count }}</div>
+        <div class="metric-subtext">Recorded in {{ current_month_label }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Average Expense</div>
+        <div class="metric-value">{{ summary.avg_paise | inr }}</div>
+        <div class="metric-subtext">Per transaction this month</div>
+    </div>
+</div>
+
+{% if total_count == 0 %}
+<div class="empty-state">
+    <div class="empty-icon-wrap">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+            <line x1="2" y1="10" x2="22" y2="10"></line>
+        </svg>
+    </div>
+    <h3 class="empty-title">No transactions recorded yet</h3>
+    <p class="empty-desc">Your expense tracker is completely fresh. Add your first expense to see your overview metrics and spending breakdowns.</p>
+    <button type="button" class="btn btn-primary" onclick="window.Expensify.openAddModal();">Add Your First Expense</button>
+</div>
+{% else %}
+<div class="dashboard-grid">
+    <div class="content-box">
+        <div class="box-header">
+            <div>
+                <h3 class="box-title">Category Breakdown</h3>
+                <div class="box-subtitle">{{ current_month_label }} distribution</div>
+            </div>
+        </div>
+        <div class="chart-container donut-container">
+            <canvas id="dashboardDonutChart"></canvas>
+            <div id="donutEmptyMessage" class="chart-empty-message" style="display: none;">
+                No expenses in {{ current_month_label }}
+            </div>
+        </div>
+    </div>
+
+    <div class="content-box">
+        <div class="box-header">
+            <div>
+                <h3 class="box-title">Recent Transactions</h3>
+                <div class="box-subtitle">Last 5 recorded expenses</div>
+            </div>
+            <a href="{{ url_for('expenses') }}" class="box-link">View All &rarr;</a>
+        </div>
+
+        {% if recent_expenses %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th class="text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exp in recent_expenses %}
+                    <tr>
+                        <td class="text-secondary text-sm nowrap">{{ exp.expense_date | display_date }}</td>
+                        <td>
+                            <div class="fw-medium">{{ exp.description }}</div>
+                            <div class="text-xs text-secondary">{{ exp.payment_method }}</div>
+                        </td>
+                        <td>
+                            <span class="category-badge" style="--badge-color: {{ category_colors.get(exp.category, '#8395A7') }};">
+                                {{ exp.category }}
+                            </span>
+                        </td>
+                        <td class="amount-cell">{{ exp.amount_paise | inr }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-mini">No transactions found.</div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function() {
+        var breakdownData = [
+            {% for b in category_breakdown %}
+            {
+                category: {{ b.category | tojson }},
+                total_rupees: {{ (b.total_paise / 100.0) | round(2) }},
+                color: {{ category_colors.get(b.category, '#8395A7') | tojson }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        if (window.Expensify && window.Expensify.initDashboardDonut) {
+            window.Expensify.initDashboardDonut(breakdownData);
+        }
+    })();
+</script>
+{% endblock %}
